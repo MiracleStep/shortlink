@@ -1,5 +1,6 @@
 package com.nageoffer.shortlink.admin.controller;
 
+import com.nageoffer.shortlink.admin.common.convention.result.Result;
 import com.nageoffer.shortlink.admin.dto.resp.UserRespDTO;
 import com.nageoffer.shortlink.admin.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +23,9 @@ public class UserController {
      * @return
      */
     @GetMapping("/api/short-link/admin/v1/user/{username}")
-    public UserRespDTO getUserByUsername(@PathVariable("username") String username){
-
-        return userService.getUserByUsername(username);
+    public Result<UserRespDTO> getUserByUsername(@PathVariable("username") String username){
+        Result<UserRespDTO> userRespDTOResult = new Result<>();
+        UserRespDTO userRespDTO = userService.getUserByUsername(username);
+        return userRespDTOResult.setCode("0").setData(userRespDTO);
     }
 }
