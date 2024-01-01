@@ -13,19 +13,23 @@ import com.nageoffer.shortlink.admin.dto.resp.UserRespDTO;
 import com.nageoffer.shortlink.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import static com.nageoffer.shortlink.admin.common.constant.RedisCacheConstant.LOCK_USER_REGISTER_KEY;
 
 /**
  * 用户接口实现层
  */
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor //构造器传入参数
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements UserService {
 
-    @Autowired
-    private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
+    private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;//构造器传入参数
+
+    private final RedissonClient redissonClient;//构造器传入参数
 
     @Override
     public UserRespDTO getUserByUsername(String username) {
@@ -52,10 +56,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         if(hasUserName(requestParam.getUsername())){
             throw new ClientException(UserErrorCodeEnum.USE_NAME_EXIST);
         }
-        int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
-        if(inserted < 1){
-            throw new ClientException(UserErrorCodeEnum.USER_SAVE_ERROR);
+        RLock lock = redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());
+        try {
+            if(lock.tryLock()){
+                int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
+                if(inserted < 1){
+                    throw new ClientException(UserErrorCodeEnum.USER_SAVE_ERROR);
+                }
+                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
+                return;
+            }
+            throw new ClientException(UserErrorCodeEnum.USE_NAME_EXIST);
+        } finally {
+            lock.unlock();
         }
-        userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
+
     }
 }
