@@ -112,7 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             throw new ClientException("用户已登录");
         }
         String uuid = UUID.randomUUID().toString();//作为token
-        stringRedisTemplate.opsForHash().put("login_" + userLoginReqDTO.getUsername(), "token", JSON.toJSONString(userDO));
+        stringRedisTemplate.opsForHash().put("login_" + userLoginReqDTO.getUsername(), uuid, JSON.toJSONString(userDO));
         stringRedisTemplate.expire("login_" + userLoginReqDTO.getUsername(), 30, TimeUnit.MINUTES);
         return new UserLoginRespDTO(uuid);//uuid作为token返回
     }
@@ -120,5 +120,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
     @Override
     public Boolean checkLogin(String username, String token) {
         return stringRedisTemplate.opsForHash().get("login_" + username, token) != null;
+    }
+
+    @Override
+    public void logout(String username, String token) {
+        if (checkLogin(username, token)){
+            stringRedisTemplate.delete("login_" + username);
+            return;
+        }
+        throw new ClientException("用户Token不存在或者用户未登录");
     }
 }
