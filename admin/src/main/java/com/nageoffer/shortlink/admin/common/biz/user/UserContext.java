@@ -5,7 +5,7 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 import java.util.Optional;
 
 /**
- * 用户上下文（ThreadLocal存储）
+ * 用户上下文（ThreadLocal存储,使用过滤器获取UserInfoDTO信息）
  */
 public final class UserContext {
 
