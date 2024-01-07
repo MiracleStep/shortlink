@@ -6,6 +6,7 @@ import com.nageoffer.shortlink.admin.dto.req.ShortLinkGroupSaveReqDTO;
 import com.nageoffer.shortlink.admin.dto.req.ShortLinkGroupSortReqDTO;
 import com.nageoffer.shortlink.admin.dto.req.ShortLinkGroupUpdateReqDTO;
 import com.nageoffer.shortlink.admin.dto.resp.ShortLinkGroupRespDTO;
+import com.nageoffer.shortlink.admin.remote.dto.ShortLinkRemoteService;
 import com.nageoffer.shortlink.admin.service.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,8 @@ import java.util.List;
  */
 @RestController
 public class GroupController {
+
+
 
     @Autowired
     private GroupService groupService;
