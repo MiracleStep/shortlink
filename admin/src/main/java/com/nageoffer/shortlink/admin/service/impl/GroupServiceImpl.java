@@ -38,13 +38,18 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
 
     @Override
     public void saveGroup(String groupName) {
+        saveGroup(UserContext.getUsername(), groupName);
+    }
+
+    @Override
+    public void saveGroup(String username, String groupName) {
         String gid;
         do {
-            gid = RandomCodeGenerator.generateRandomCode();
+            gid = RandomCodeGenerator.generateRandomCode();//生成随机的六位分组gid
         } while (hasGid(gid));
 
         GroupDO groupDO = GroupDO.builder()
-                .username(UserContext.getUsername())
+                .username(username)
                 .name(groupName)
                 .sortOrder(0)
                 .gid(gid)
