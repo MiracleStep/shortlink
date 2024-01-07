@@ -28,6 +28,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.nageoffer.shortlink.admin.common.constant.RedisCacheConstant.LOCK_USER_REGISTER_KEY;
+import static com.nageoffer.shortlink.admin.common.enums.UserErrorCodeEnum.USER_EXIST;
+import static com.nageoffer.shortlink.admin.common.enums.UserErrorCodeEnum.USER_SAVE_ERROR;
 
 /**
  * 用户接口实现层
@@ -70,9 +72,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         RLock lock = redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());//获取redis分布式锁
         try {
             if(lock.tryLock()){
-                int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
-                if(inserted < 1){
-                    throw new ClientException(UserErrorCodeEnum.USER_SAVE_ERROR);
+                try {
+                    int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
+                    if(inserted < 1){
+                        throw new ClientException(USER_SAVE_ERROR);
+                    }
+                } catch (ClientException e) {
+                    throw new ClientException(USER_EXIST);
                 }
                 userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
                 return;

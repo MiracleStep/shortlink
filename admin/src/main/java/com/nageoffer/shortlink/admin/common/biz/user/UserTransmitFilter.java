@@ -5,16 +5,13 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.nageoffer.shortlink.admin.common.convention.exception.ClientException;
 import com.nageoffer.shortlink.admin.common.convention.result.Results;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Objects;
@@ -35,9 +32,9 @@ public class UserTransmitFilter implements Filter {
             "/api/short-link/admin/v1/user/has-username"
     );
 
-    @SneakyThrows
+
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         String requestURI = httpServletRequest.getRequestURI();
         if (!IGNORE_URI.contains(requestURI)) {
@@ -75,11 +72,13 @@ public class UserTransmitFilter implements Filter {
         }
     }
 
-    private void returnJson(HttpServletResponse response, String json) throws Exception {
+    private void returnJson(HttpServletResponse response, String json) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html; charset=utf-8");
         try (PrintWriter writer = response.getWriter()) {
             writer.print(json);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
