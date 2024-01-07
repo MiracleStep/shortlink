@@ -59,7 +59,7 @@ public class UserController {
      * @param userRegisterReqDTO
      * @return
      */
-    @GetMapping("/api/short-link/admin/v1/user")
+    @PostMapping("/api/short-link/admin/v1/user")
     public Result<Void> register(@RequestBody UserRegisterReqDTO userRegisterReqDTO) {
         userService.register(userRegisterReqDTO);
         return Results.success();

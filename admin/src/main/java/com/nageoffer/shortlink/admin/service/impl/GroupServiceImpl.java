@@ -46,7 +46,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
         String gid;
         do {
             gid = RandomCodeGenerator.generateRandomCode();//生成随机的六位分组gid
-        } while (hasGid(gid));
+        } while (hasGid(username, gid));
 
         GroupDO groupDO = GroupDO.builder()
                 .username(username)
@@ -113,11 +113,11 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
         });
     }
 
-    private boolean hasGid(String gid) {
+    private boolean hasGid(String username, String gid) {
         LambdaQueryWrapper<GroupDO> lambdaQueryWrapper = Wrappers.lambdaQuery(GroupDO.class)
                 .eq(GroupDO::getGid, gid)
                 //TODO设置用户名
-                .eq(GroupDO::getUsername, UserContext.getUsername());
+                .eq(GroupDO::getUsername, Optional.ofNullable(username).orElse(UserContext.getUsername()));
         GroupDO groupDO = baseMapper.selectOne(lambdaQueryWrapper);
         return groupDO != null;
     }
