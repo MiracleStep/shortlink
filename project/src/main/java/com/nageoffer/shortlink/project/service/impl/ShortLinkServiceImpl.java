@@ -41,8 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.nageoffer.shortlink.project.common.constant.RedisKeyConstant.GOTO_SHORT_LINK_KEY;
-import static com.nageoffer.shortlink.project.common.constant.RedisKeyConstant.LOCK_GOTO_SHORT_LINK_KEY;
+import static com.nageoffer.shortlink.project.common.constant.RedisKeyConstant.*;
 
 /**
  * 短链接接口实现层
@@ -178,14 +177,27 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         String serverName = request.getServerName();
         String fullShortUrl = serverName + "/" + shortUri;//拼接完整短链接
 //      if (!shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl)) //不存在这个url：不能用这个，fullShortUrl不存在可能判定为存在导致为if为false
+        //1、请求缓存
         String originalLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(originalLink)) { //缓存有:直接跳转
             response.sendRedirect(originalLink);
             return;
         }
+        //2—3、缓存没有，查询布隆过滤器
+        boolean contains = shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl);
+        if (!contains) { //布隆过滤器中不存在 -> 数据库中不存在
+            return;
+        }
+        //4、查询空值标识Key
+        String gotoIsNullShortLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl));
+        if (StrUtil.isNotBlank(gotoIsNullShortLink)) { //空值Key不为空
+            return;//说明数据库中不存在
+        }
         //缓存击穿1：防止缓存击穿使用分布式锁
         RLock lock = redissonClient.getLock(String.format(LOCK_GOTO_SHORT_LINK_KEY, fullShortUrl));
+        //5、获取分布式锁
         lock.lock(); //缓存击穿2：1w个请求获取到这个lock，只有一个抢到这个锁，读取到数据后放入缓存中，后面的请求都能拿到缓存中的数据了。
+        //6、通过数据库加载数据，数据存在，则放进缓存，不存在缓存空值
         try {
             //缓存击穿3：双重判定锁，后续等待锁的线程拿到锁后再次访问缓存，因为如果缓存击穿的话(数据库中有数据)第一个请求拿到数据后放入缓存中，后续等待锁的线程获取到锁可以到缓存取值。
             originalLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
@@ -197,8 +209,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl);
             //根据完整短链接从路由表中查找gid
             ShortLinkGotoDO shortLinkGotoDO = shortLinkGotoMapper.selectOne(linkGotoQueryWrapper);
-            if (shortLinkGotoDO == null) {
-                //严谨来说此处需要封控
+            if (shortLinkGotoDO == null) { //数据库中为空值，说明布隆过滤器误判了
+                //空值Key设置值“-”.
+                stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-");
+                //严谨来说此处需要风控
                 return;
             }
 
