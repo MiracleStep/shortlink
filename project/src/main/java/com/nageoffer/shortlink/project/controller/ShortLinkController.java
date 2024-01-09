@@ -13,7 +13,6 @@ import com.nageoffer.shortlink.project.service.ShortLinkService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class ShortLinkController {
 
 
     /**
-     * 短链接跳转，
+     * 短链接跳转原始链接
      * @param shortUri
      * @param request
      * @param response
