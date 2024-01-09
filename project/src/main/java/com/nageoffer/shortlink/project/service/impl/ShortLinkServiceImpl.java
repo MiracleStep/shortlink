@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -179,6 +180,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         return BeanUtil.copyToList(shortLinkDOList, ShortLinkGroupCountQueryRespDTO.class);
     }
 
+
     @Override
     public void resoreUrl(String shortUri, HttpServletRequest request, HttpServletResponse response) throws IOException {
         String serverName = request.getServerName();
@@ -193,11 +195,13 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         //2—3、缓存没有，查询布隆过滤器
         boolean contains = shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl);
         if (!contains) { //布隆过滤器中不存在 -> 数据库中不存在
+            response.sendRedirect("/page/notfound");
             return;
         }
         //4、查询空值标识Key
         String gotoIsNullShortLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(gotoIsNullShortLink)) { //空值Key不为空
+            response.sendRedirect("/page/notfound");
             return;//说明数据库中不存在
         }
         //缓存击穿1：防止缓存击穿使用分布式锁
@@ -220,6 +224,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 //空值Key设置值“-”.30分钟过期
                 stringRedisTemplate.opsForValue()
                         .set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-", 30, TimeUnit.MINUTES);
+                response.sendRedirect("/page/notfound");
                 //严谨来说此处需要风控
                 return;
             }
@@ -232,6 +237,15 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .eq(ShortLinkDO::getEnableStatus, 0);
             ShortLinkDO shortLinkDO = baseMapper.selectOne(queryWrapper);
             if (shortLinkDO != null) {
+                //检查短链接有效期是否过期
+                if (shortLinkDO.getValidDate() != null && shortLinkDO.getValidDate().before(new Date())) {
+                    //短链接有效期过期了，相当于没有这个短链接。
+                    //空值Key设置值“-”.30分钟过期
+                    stringRedisTemplate.opsForValue()
+                            .set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-", 30, TimeUnit.MINUTES);
+                    response.sendRedirect("/page/notfound");
+                    return;
+                }
                 //拿到数据放入缓存
                 stringRedisTemplate.opsForValue().set(
                         String.format(GOTO_SHORT_LINK_KEY, fullShortUrl),
