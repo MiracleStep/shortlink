@@ -18,7 +18,7 @@ public class LinkUtil {
      * @param validDate
      * @return
      */
-    public static long getLinkCacheValidDate(Date validDate) {
+    public static long getLinkCacheValidTime(Date validDate) {
         //如果不为空就判断两个日期相差的时长（得到毫秒差值），否则设置默认值一个月。
         return Optional.ofNullable(validDate)
                 .map(each -> DateUtil.between(new Date(), each, DateUnit.MS))
