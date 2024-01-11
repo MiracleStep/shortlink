@@ -117,6 +117,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .build();
     }
 
+    //TODO 这个函数有问题
     @Override
     public void updateShortLink(ShortLinkUpdateReqDTO requestParam) {
         //可能是修改分组，因为gid是分片键，需要先查询原来的分组，进行删除再新增
@@ -170,7 +171,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
         return resultPage.convert(each -> {
             ShortLinkPageRespDTO result = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);
-            result.setFullShortUrl("http://" + result.getFullShortUrl());
+//            result.setFullShortUrl("http://" + result.getFullShortUrl());
             result.setDomain("http://" + result.getDomain());
             return result;
         });
@@ -243,25 +244,23 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .eq(ShortLinkDO::getDelFlag, 0)
                     .eq(ShortLinkDO::getEnableStatus, 0);
             ShortLinkDO shortLinkDO = baseMapper.selectOne(queryWrapper);
-            if (shortLinkDO != null) {
-                //检查短链接有效期是否过期
-                if (shortLinkDO.getValidDate() != null && shortLinkDO.getValidDate().before(new Date())) {
-                    //短链接有效期过期了，相当于没有这个短链接。
-                    //空值Key设置值“-”.30分钟过期
-                    stringRedisTemplate.opsForValue()
-                            .set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-", 30, TimeUnit.MINUTES);
-                    response.sendRedirect("/page/notfound");
-                    return;
-                }
-                //拿到数据放入缓存
-                stringRedisTemplate.opsForValue().set(
-                        String.format(GOTO_SHORT_LINK_KEY, fullShortUrl),
-                        shortLinkDO.getOriginUrl(),
-                        LinkUtil.getLinkCacheValidTime(shortLinkDO.getValidDate()), TimeUnit.MILLISECONDS
-                );
-                //短链接跳转
-                response.sendRedirect(shortLinkDO.getOriginUrl());
+            //检查短链接有效期是否过期 或者 是否被移入回收站
+            if (shortLinkDO == null || (shortLinkDO.getValidDate() != null && shortLinkDO.getValidDate().before(new Date()))) {
+                //短链接有效期过期了，相当于没有这个短链接。
+                //空值Key设置值“-”.30分钟过期
+                stringRedisTemplate.opsForValue()
+                        .set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-", 30, TimeUnit.MINUTES);
+                response.sendRedirect("/page/notfound");
+                return;
             }
+            //拿到数据放入缓存
+            stringRedisTemplate.opsForValue().set(
+                    String.format(GOTO_SHORT_LINK_KEY, fullShortUrl),
+                    shortLinkDO.getOriginUrl(),
+                    LinkUtil.getLinkCacheValidTime(shortLinkDO.getValidDate()), TimeUnit.MILLISECONDS
+            );
+            //短链接跳转
+            response.sendRedirect(shortLinkDO.getOriginUrl());
         } finally {
             lock.unlock();
         }
