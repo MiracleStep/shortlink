@@ -80,6 +80,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     private final LinkOsStatsMapper linkOsStatsMapper;
 
+    private final LinkBrowserStatsMapper linkBrowserStatsMapper;
+
+    private final LinkAccessLogsMapper linkAccessLogsMapper;
+
     @Value("${short-link.stats.locale.amap-key}")
     private String statsLocaleAmapKey;
 
@@ -313,6 +317,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             } else { //cookie为空，表示用户第一次访问这个网站
                 addResponseCookieTask.run();
             }
+
             //uip操作
             String actualIp = LinkUtil.getActualIp(request);
             Long uipAdded = stringRedisTemplate.opsForSet().add("short-link:stats:uip:" + fullShortUrl, actualIp);
@@ -373,6 +378,20 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .date(new Date())
                         .build();
             linkOsStatsMapper.shortLinkState(linkOsStatsDO);
+
+            //浏览器统计
+            LinkBrowserStatsDO linkBrowserStatsDO = LinkBrowserStatsDO.builder()
+                    .browser(LinkUtil.getBrowser(request))
+                    .cnt(1)
+                    .gid(gid)
+                    .fullShortUrl(fullShortUrl)
+                    .date(new Date())
+                    .build();
+            linkBrowserStatsMapper.shortLinkBrowserState(linkBrowserStatsDO);
+//            LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
+//                    .ip(actualIp)
+//                    .browser()
+//                    .build();
         } catch (Exception e) {
             log.error("短链接访问统计异常:", e);
         }
