@@ -15,68 +15,35 @@
  * limitations under the License.
  */
 
-package com.nageoffer.shortlink.project.dto.resp;
+package com.nageoffer.shortlink.admin.remote.dto.req;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Date;
 
 /**
- * 短链接监控访问记录响应参数
+ * 短链接监控访问记录请求参数
  *
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ShortLinkStatsAccessRecordRespDTO {
+public class ShortLinkStatsAccessRecordReqDTO extends Page {
 
     /**
-     * 访客类型
+     * 完整短链接
      */
-    private String uvType;
+    private String fullShortUrl;
 
     /**
-     * 用户信息
+     * 分组标识
      */
-    private String user;
+    private String gid;
 
     /**
-     * 浏览器
+     * 开始日期
      */
-    private String browser;
+    private String startDate;
 
     /**
-     * 操作系统
+     * 结束日期
      */
-    private String os;
-
-    /**
-     * ip
-     */
-    private String ip;
-
-    /**
-     * 访问网络
-     */
-    private String network;
-    /**
-     * 访问设备
-     */
-    private String device;
-
-    /**
-     * 地区
-     */
-    private String locale;
-
-    /**
-     * 创建时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private Date createTime;
+    private String endDate;
 }
