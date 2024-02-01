@@ -194,14 +194,21 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Override
     public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
-        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
-                .eq(ShortLinkDO::getGid, requestParam.getGid())
-                .eq(ShortLinkDO::getEnableStatus, 0)
-                .eq(ShortLinkDO::getDelFlag, 0);
-        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+        //旧的分页查询，没有今日统计信息和排序功能
+//        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
+//                .eq(ShortLinkDO::getGid, requestParam.getGid())
+//                .eq(ShortLinkDO::getEnableStatus, 0)
+//                .eq(ShortLinkDO::getDelFlag, 0);
+//        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+//        return resultPage.convert(each -> {
+//            ShortLinkPageRespDTO result = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);
+////            result.setFullShortUrl("http://" + result.getFullShortUrl());
+//            result.setDomain("http://" + result.getDomain());
+//            return result;
+//        });
+        IPage<ShortLinkDO> resultPage = baseMapper.pageLink(requestParam);
         return resultPage.convert(each -> {
             ShortLinkPageRespDTO result = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);
-//            result.setFullShortUrl("http://" + result.getFullShortUrl());
             result.setDomain("http://" + result.getDomain());
             return result;
         });
