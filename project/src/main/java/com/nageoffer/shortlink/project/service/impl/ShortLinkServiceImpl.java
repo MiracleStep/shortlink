@@ -176,10 +176,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .build();
     }
 
-    //TODO 这个函数有问题
+    //TODO 这个函数有问题 高并发问题 https://www.yuque.com/magestack/shortlink/ynnzncmt53gd7yts
     @Override
     public void updateShortLink(ShortLinkUpdateReqDTO requestParam) {
-        //可能是修改分组，因为gid是分片键，需要先查询原来的分组，进行删除再新增
         LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
                 .eq(ShortLinkDO::getGid, requestParam.getGid())
                 .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
@@ -209,8 +208,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .eq(ShortLinkDO::getDelFlag, 0)
                     .eq(ShortLinkDO::getEnableStatus, 0)
                     .set(Objects.equals(requestParam.getValidDateType(), VailDateTypeEnum.PERMANENT.getType()), ShortLinkDO::getValidDate, null);
-            baseMapper.update(shortLinkDO, updateWrapper);
+            baseMapper.update(shortLinkDO, updateWrapper); //直接修改数据即可。
         } else { //修改分组了。
+            // 可能是修改分组，因为gid是分片键，需要先查询原来的分组，进行删除再新增
             LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
                     .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
                     .eq(ShortLinkDO::getGid, requestParam.getGid())
@@ -218,6 +218,19 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .eq(ShortLinkDO::getEnableStatus, 0);
             baseMapper.delete(updateWrapper);
             baseMapper.insert(shortLinkDO);
+        }
+        //修改日期后要判断删除缓存中的数据。
+        if (!Objects.equals(hasShortLinkDO.getValidDateType(), shortLinkDO.getValidDateType()) ||
+                !Objects.equals(hasShortLinkDO.getValidDate(), shortLinkDO.getValidDate())) {
+            //就只要修改了日期，就删除短链接跳转缓存。
+            stringRedisTemplate.delete(String.format(GOTO_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
+            if (shortLinkDO.getValidDate() != null && hasShortLinkDO.getValidDate().before(new Date())) {
+                //短链接修改之前是过期
+                if (Objects.equals(requestParam.getValidDateType(), VailDateTypeEnum.PERMANENT.getType()) || requestParam.getValidDate().after(new Date())) {
+                    //修改后的短链接是永久有效或者时间没过期
+                    stringRedisTemplate.delete(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
+                }
+            }
         }
     }
 
