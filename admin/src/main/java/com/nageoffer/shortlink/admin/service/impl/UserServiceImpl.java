@@ -1,6 +1,7 @@
 package com.nageoffer.shortlink.admin.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -25,6 +26,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -110,6 +112,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         if(userDO == null){
             throw new ClientException("用户不存在");
         }
+        Map<Object, Object> hasLoginMap = stringRedisTemplate.opsForHash().entries("login_" + userLoginReqDTO.getUsername());
+        if(CollUtil.isNotEmpty(hasLoginMap)){
+            //拿到redis中保存的用户token
+            String token = hasLoginMap.keySet().stream()
+                    .findFirst()
+                    .map(Object::toString)
+                    .orElseThrow(() -> new ClientException("用户登录错误"));
+            return new UserLoginRespDTO(token);
+        }
         /**
          * Hash
          * Key：login_用户名
@@ -117,12 +128,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
          *  Key：token标识
          *  Val：JSON 字符串（用户信息）
          */
-        if(stringRedisTemplate.hasKey("login_" + userLoginReqDTO.getUsername())){
-            throw new ClientException("用户已登录");
-        }
         String uuid = UUID.randomUUID().toString();//作为token
         stringRedisTemplate.opsForHash().put("login_" + userLoginReqDTO.getUsername(), uuid, JSON.toJSONString(userDO));
-        stringRedisTemplate.expire("login_" + userLoginReqDTO.getUsername(), 30, TimeUnit.DAYS);
+        stringRedisTemplate.expire("login_" + userLoginReqDTO.getUsername(), 30, TimeUnit.MINUTES);
         return new UserLoginRespDTO(uuid);//uuid作为token返回
     }
 
