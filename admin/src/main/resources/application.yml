@@ -23,3 +23,7 @@ spring:
 short-link:
   group:
     max-num: 20
+  flow-limit:
+    enable: true
+    time-window: 1 # 多少秒时间内
+    max-access-count: 20 # 多少秒内访问多少次
