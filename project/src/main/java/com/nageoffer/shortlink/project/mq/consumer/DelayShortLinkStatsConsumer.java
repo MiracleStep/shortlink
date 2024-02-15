@@ -65,7 +65,8 @@ public class DelayShortLinkStatsConsumer implements InitializingBean {
                         } catch (Throwable ignored) {
                         }
                     }
-                });
+                }
+        );
     }
 
     @Override
