@@ -494,7 +494,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             uvCookie.setPath(StrUtil.sub(fullShortUrl, fullShortUrl.indexOf("/"), fullShortUrl.length()));
             response.addCookie(uvCookie);
             uvFirstFlag.set(Boolean.TRUE);
-            stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv.get());
+            stringRedisTemplate.opsForSet().add(SHORT_LINK_STATS_UV_KEY + fullShortUrl, uv.get());
         };
         if (ArrayUtil.isNotEmpty(cookies)) {
             Arrays.stream(cookies)
@@ -504,7 +504,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .ifPresentOrElse(each -> {//cookie中“uv”键对应的值不为空
                         //但也可能是新用户，因为用户可能修改cookie。试试插入到redis中，如果可以插入就是新用户，不能就是老用户。
                         uv.set(each);
-                        Long uvAdded = stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, each);
+                        Long uvAdded = stringRedisTemplate.opsForSet().add(SHORT_LINK_STATS_UV_KEY + fullShortUrl, each);
                         uvFirstFlag.set(uvAdded != null && uvAdded > 0L);//如果可以添加redis的uv用户标识符，表示为新用户。否则不是新用户
                     }, addResponseCookieTask);//为空，表示为新用户。
         } else {//cookie为空，表示用户第一次访问这个网站
@@ -515,7 +515,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         String browser = LinkUtil.getBrowser(request);
         String device = LinkUtil.getDevice(request);
         String network = LinkUtil.getNetwork(request);
-        Long uipAdded = stringRedisTemplate.opsForSet().add("short-link:stats:uip:" + fullShortUrl, remoteAddr);
+        Long uipAdded = stringRedisTemplate.opsForSet().add(SHORT_LINK_STATS_UIP_KEY + fullShortUrl, remoteAddr);
         boolean uipFirstFlag = uipAdded != null && uipAdded > 0L;//插入成功，则为True说明为新ip
         return ShortLinkStatsRecordDTO.builder()
                 .fullShortUrl(fullShortUrl)
