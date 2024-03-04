@@ -115,6 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         Map<Object, Object> hasLoginMap = stringRedisTemplate.opsForHash().entries(USER_LOGIN_KEY + userLoginReqDTO.getUsername());
         if(CollUtil.isNotEmpty(hasLoginMap)){
+            stringRedisTemplate.expire(USER_LOGIN_KEY + userLoginReqDTO.getUsername(), 30, TimeUnit.MINUTES);
             //拿到redis中保存的用户token
             String token = hasLoginMap.keySet().stream()
                     .findFirst()
