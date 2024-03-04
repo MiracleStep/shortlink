@@ -1,2 +1,31 @@
 server:
   port: 8000
+spring:
+  application:
+    name: short-link-gateway
+  data:
+    redis:
+      host: 10.211.55.3
+      port: 6379
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+    gateway:
+      routes:
+        - id: short-link-admin
+          uri: lb://short-link-admin
+          predicates:
+            - Path=/api/short-link/admin/**
+          filters: # https://blog.csdn.net/CYK_byte/article/details/134261650
+            - name: TokenValidate
+              args:
+                whitePathList:
+                  - /api/short-link/admin/v1/user/login
+                  - /api/short-link/admin/v1/user/has-username
+        - id: short-link-project
+          uri: lb://short-link-project
+          predicates:
+            - Path=/api/short-link/**
+          filters:
+            - name: TokenValidate

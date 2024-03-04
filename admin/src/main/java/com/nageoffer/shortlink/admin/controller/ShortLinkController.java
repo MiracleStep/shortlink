@@ -23,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
+/**
+ * 短链接后管控制层
+ *
+ */
 @RestController
 @RequiredArgsConstructor
 public class ShortLinkController {
