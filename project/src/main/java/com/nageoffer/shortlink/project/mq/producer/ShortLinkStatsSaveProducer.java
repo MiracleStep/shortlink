@@ -27,7 +27,7 @@ public class ShortLinkStatsSaveProducer {
 //    private final StringRedisTemplate stringRedisTemplate;
     private final RocketMQTemplate rocketMQTemplate;
 
-    @Value("${rocketmq.producet.topic}")
+    @Value("${rocketmq.producer.topic}")
     private String statsSaveTopic;
 
 
