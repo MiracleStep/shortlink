@@ -139,6 +139,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             baseMapper.insert(shortLinkDO);
             shortLinkGotoMapper.insert(shortLinkGotoDO);//同时添加数据到路由表
         } catch (DuplicateKeyException ex) { //防止多线程并发情况下的错误，有多个线程可能会拿到相同的不存在的URI然后返回。
+            // 首先判断是否存在布隆过滤器，如果不存在直接新增
+            if (!shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl)) {
+                shortUriCreateCachePenetrationBloomFilter.add(fullShortUrl);
+            }
             //抛异常。
             log.warn("短链接 {} 重复入库", fullShortUrl);
             throw new ServiceException(String.format("短链接: %s 生成重复", fullShortUrl));
@@ -199,6 +203,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         if (hasShortLinkDO == null) {
             throw new ClientException("短链接记录不存在");//查不到，需要报错。
         }
+
         if (Objects.equals(hasShortLinkDO.getGid(), requestParam.getGid())) { //没有修改分组，直接进行修改信息即可
             LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
                     .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
@@ -356,17 +361,6 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     @Override
     public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
         //旧的分页查询，没有今日统计信息和排序功能
-//        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
-//                .eq(ShortLinkDO::getGid, requestParam.getGid())
-//                .eq(ShortLinkDO::getEnableStatus, 0)
-//                .eq(ShortLinkDO::getDelFlag, 0);
-//        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
-//        return resultPage.convert(each -> {
-//            ShortLinkPageRespDTO result = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);
-////            result.setFullShortUrl("http://" + result.getFullShortUrl());
-//            result.setDomain("http://" + result.getDomain());
-//            return result;
-//        });
         IPage<ShortLinkDO> resultPage = baseMapper.pageLink(requestParam);
         return resultPage.convert(each -> {
             ShortLinkPageRespDTO result = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);

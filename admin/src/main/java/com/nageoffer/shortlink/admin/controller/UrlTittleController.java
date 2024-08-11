@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UrlTittleController {
     private final ShortLinkActualRemoteService shortLinkActualRemoteService;
-    /**
-     * TODO: 后续重构为SpringCloud Feign调用
-     */
+
     private final ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService(){};
 
     /**

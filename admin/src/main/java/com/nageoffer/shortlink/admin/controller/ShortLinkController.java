@@ -30,9 +30,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class ShortLinkController {
-    /**
-     * TODO: 后续重构为SpringCloud Feign调用
-     */
+
     private final ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService(){};
 
     private final ShortLinkActualRemoteService shortLinkActualRemoteService;

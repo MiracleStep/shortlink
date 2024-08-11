@@ -85,6 +85,7 @@ public class ShortLinkStatsSaveConsumer implements StreamListener<String, MapRec
             //如果执行异常就删除。
             messageQueueIdempotentHandler.delMessageProcessed(id.toString());
             log.error("记录短链接监控消费异常", ex);
+            throw ex;
         }
         //没有执行异常
         //可能执行到delMessageProcessed或delete前就宕机了，因此多个这个步骤和上面二重的判断
