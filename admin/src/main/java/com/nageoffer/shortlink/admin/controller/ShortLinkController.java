@@ -17,6 +17,7 @@ import com.nageoffer.shortlink.admin.toolkit.EasyExcelWebUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +30,7 @@ import java.util.List;
  */
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class ShortLinkController {
 
     private final ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService(){};
@@ -64,6 +66,7 @@ public class ShortLinkController {
      */
     @PostMapping("/api/short-link/admin/v1/update")
     public Result<Void> updateShortLink(@RequestBody ShortLinkUpdateReqDTO requestParam) {
+        log.warn("修改了短链接信息");
         shortLinkActualRemoteService.updateShortLink(requestParam);
         return Results.success();
     }

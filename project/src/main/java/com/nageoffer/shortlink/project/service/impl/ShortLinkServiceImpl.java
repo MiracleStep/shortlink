@@ -187,7 +187,6 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .build();
     }
 
-    //TODO 这个函数有问题 高并发问题 https://www.yuque.com/magestack/shortlink/ynnzncmt53gd7yts
     //重点函数，涉及到高并发等问题。见笔记，功能扩展：短链接修改。
     @Transactional(rollbackFor = Exception.class)
     @Override
